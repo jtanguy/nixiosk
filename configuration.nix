@@ -188,6 +188,17 @@
         PKG_CONFIG = "pkg-config";
         verifyCargoDeps = true;
         cargoSha256 = "089j0sdmjs8x2s0vlx6ik6wpfdvfdwv2194hmrr4gykyvf785w49";
+        postInstall = let
+          rpathLibs = with super; [
+            expat
+            fontconfig
+            freetype
+            libGL
+            wayland
+          ];
+        in ''
+          patchelf --set-rpath "${lib.makeLibraryPath rpathLibs}" $out/bin/makair-control
+        '';
       };
 
     }) ];
