@@ -1,8 +1,9 @@
 { lib, pkgs, config, ... }:
 
 let
-  # u-boot / extlinux doesn’t work on raspberry pi 4
-  ubootEnabled = !(builtins.elem config.nixiosk.hardware [ "raspberryPi4" ]);
+  # u-boot / extlinux doesn’t work on raspberry pi 4, raspberry pi 3
+  # looks unstable
+  ubootEnabled = !(builtins.elem config.nixiosk.hardware [ "raspberryPi3" "raspberryPi4" ]);
 
   # vc4-kms and vc4-fkms-v3d seem to work better on different hardware
   # unclear why that is. Manually tested each on my rpi0 and rpi4.
@@ -10,13 +11,6 @@ let
                 then "vc4-kms-v3d"
                 else "vc4-fkms-v3d";
 
-  gpu-mem = {
-    raspberryPi0 = 120;
-    raspberryPi1 = 120;
-    raspberryPi2 = 120;
-    raspberryPi3 = 220;
-    raspberryPi4 = 320;
-  }.${config.nixiosk.hardware or ""} or 320;
 in {
 
   config = lib.mkIf (builtins.elem config.nixiosk.hardware ["raspberryPi0" "raspberryPi1" "raspberryPi2" "raspberryPi3" "raspberryPi4"]) {
@@ -68,22 +62,20 @@ in {
       # appparently this avoids some common bug in Raspberry Pi.
       "dwc_otg.lpm_enable=0"
 
-      # avoids https://github.com/raspberrypi/linux/issues/3331
-      "initcall_blacklist=bcm2708_fb_init"
-
       # avoids https://github.com/raspberrypi/firmware/issues/1247
       "cma=${{
         raspberryPi0 = "256M";
         raspberryPi1 = "256M";
-        raspberryPi2 = "256M";
-        raspberryPi3 = "512M";
+        raspberryPi2 = "256M@512M";
+        raspberryPi3 = "256M@512M";
         raspberryPi4 = "512M";
       }.${config.nixiosk.hardware} or (throw "unknown raspberry pi system (${config.nixiosk.hardware})")}"
 
       "plymouth.ignore-serial-consoles"
-    ];
-    loader.grub.enable = false;
-    loader.generic-extlinux-compatible.enable = true;
+    ]
+
+      # avoids https://github.com/raspberrypi/linux/issues/3331
+      ++ lib.optional ubootEnabled "initcall_blacklist=bcm2708_fb_init";
     initrd.kernelModules = [ "vc4" "bcm2835_dma" "i2c_bcm2835" "bcm2835_rng" ];
   };
 
@@ -125,6 +117,7 @@ in {
     raspberryPi4 = { config = "aarch64-unknown-linux-gnu"; };
   }.${config.nixiosk.hardware} or (throw "No known crossSystem for ${config.nixiosk.hardware}.");
 
+  boot.loader.grub.enable = false;
   boot.loader.raspberryPi = {
     enable = true;
     version = {
@@ -139,7 +132,6 @@ in {
 
     firmwareConfig = ''
       dtoverlay=${gpu-overlay}
-      gpu_mem=${toString gpu-mem}
     '' + pkgs.stdenv.lib.optionalString pkgs.stdenv.hostPlatform.isAarch64 ''
       arm_64bit=1
     '' + pkgs.stdenv.lib.optionalString (config.nixiosk.raspberryPi.firmwareConfig != null) config.nixiosk.raspberryPi.firmwareConfig;

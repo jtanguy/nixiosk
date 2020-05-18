@@ -3,6 +3,8 @@
 
 set -eu -o pipefail
 
+NIXIOSK="$PWD"
+
 if [ "$1" = --help ]; then
     echo Usage: "$0" retropi1.json retropi1.local
 fi
@@ -18,11 +20,16 @@ if ! [ -f "$custom" ]; then
     exit 1
 fi
 
-host="$(jq -r .hostName "$custom").local"
+host=
 if [ "$#" -gt 0 ]; then
-    host="$1"
-    shift
-else
+    if [ "${1:0:1}" != "-" ]; then
+        host="$1"
+        shift
+    fi
+fi
+
+if [ -z "$host" ]; then
+    host="$(jq -r .hostName "$custom").local"
     echo "No host provided, assuming $host"
 fi
 
@@ -33,7 +40,7 @@ fi
 
 sd_drv=$(nix-instantiate --no-gc-warning --show-trace \
           --arg custom "builtins.fromJSON (builtins.readFile $(realpath "$custom"))" \
-          redeploy.nix -A config.system.build.toplevel)
+          "$NIXIOSK/redeploy.nix" -A config.system.build.toplevel)
 
 # nix build --keep-going "$sd_drv"
 out=$(nix-build --keep-going --no-out-link "$sd_drv" "$@")

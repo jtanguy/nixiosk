@@ -3,6 +3,8 @@
 
 set -eu -o pipefail
 
+NIXIOSK="$PWD"
+
 if [ "$#" -lt 1 ]; then
     echo Need to provide device path for SD card
     exit 1
@@ -47,8 +49,10 @@ shift
 
 custom=./nixiosk.json
 if [ "$#" -gt 0 ]; then
-    custom="$1"
-    shift
+    if [ "${1:0:1}" != "-" ]; then
+        custom="$1"
+        shift
+    fi
 fi
 
 if ! [ -f "$custom" ]; then
@@ -71,7 +75,7 @@ fi
 
 sd_drv=$(nix-instantiate --no-gc-warning --show-trace \
           --arg custom "builtins.fromJSON (builtins.readFile $(realpath "$custom"))" \
-          boot -A config.system.build.sdImage)
+          "$NIXIOSK/boot" -A config.system.build.sdImage)
 
 # nix build --keep-going --no-out-link "$sd_drv"
 out=$(nix-build --keep-going --no-out-link "$sd_drv" "$@")

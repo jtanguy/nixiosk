@@ -3,6 +3,8 @@
 
 set -eu -o pipefail
 
+NIXIOSK="$PWD"
+
 if [ "$1" = --help ]; then
     echo Usage: "$0" nixiosk.json.sample
 fi
@@ -20,8 +22,8 @@ if ! [ -f "$custom" ]; then
 fi
 
 sd_drv=$(nix-instantiate --no-gc-warning --show-trace \
-          --arg custom "builtins.fromJSON (builtins.readFile $custom)" \
-          boot -A config.system.build.sdImage)
+          --arg custom "builtins.fromJSON (builtins.readFile $(realpath $custom))" \
+          "$NIXIOSK/boot" -A config.system.build.sdImage)
 
 # nix build --keep-going "$sd_drv"
 nix-build --keep-going "$sd_drv" "$@"
