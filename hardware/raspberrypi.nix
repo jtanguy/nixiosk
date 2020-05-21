@@ -113,7 +113,7 @@ in {
 
     # rpi3 and rpi4 can use either aarch64 or armv8-a (armv7l).
     raspberryPi3 = { config = "aarch64-unknown-linux-gnu"; };
-    raspberryPi4 = { config = "aarch64-unknown-linux-gnu"; };
+    raspberryPi4 = { config = "armv7l-unknown-linux-gnueabihf"; };
   }.${config.nixiosk.hardware} or (throw "No known crossSystem for ${config.nixiosk.hardware}.");
 
   boot.loader.grub.enable = false;
@@ -131,7 +131,7 @@ in {
 
     firmwareConfig = ''
       dtoverlay=${gpu-overlay}
-    '' + pkgs.stdenv.lib.optionalString (config.nixiosk.raspberryPi.firmwareConfig != null) config.nixiosk.raspberryPi.firmwareConfig;
+    '' + builtins.concatStringsSep "\n" config.nixiosk.raspberryPi.firmwareConfig;
   };
 
   fileSystems = lib.mkForce (if ubootEnabled then {

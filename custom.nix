@@ -49,8 +49,8 @@
       default = null;
     };
     nixiosk.raspberryPi.firmwareConfig = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
-      default = null;
+      type = lib.types.listOf lib.types.str;
+      default = [];
     };
     nixiosk.raspberryPi.enableExtraFirmware = lib.mkOption {
       type = lib.types.bool;
