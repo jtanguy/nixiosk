@@ -78,30 +78,30 @@ in {
     initrd.kernelModules = [ "vc4" "bcm2835_dma" "i2c_bcm2835" "bcm2835_rng" ];
   };
 
-  nixpkgs.overlays = [(self: super: {
-    # Restrict drivers built by mesa to just the ones we need This
-    # reduces the install size a bit.
-    mesa = (super.mesa.override {
-      vulkanDrivers = [];
-      driDrivers = [];
-      galliumDrivers = ["vc4" "swrast"];
-      enableRadv = false;
-      withValgrind = false;
-      enableOSMesa = false;
-      enableGalliumNine = false;
-    }).overrideAttrs (o: {
-      mesonFlags = (o.mesonFlags or []) ++ ["-Dglx=disabled"];
-    });
+  # nixpkgs.overlays = [(self: super: {
+  #   # Restrict drivers built by mesa to just the ones we need This
+  #   # reduces the install size a bit.
+  #   mesa = (super.mesa.override {
+  #     vulkanDrivers = [];
+  #     driDrivers = [];
+  #     galliumDrivers = ["vc4" "swrast"];
+  #     enableRadv = false;
+  #     withValgrind = false;
+  #     enableOSMesa = false;
+  #     enableGalliumNine = false;
+  #   }).overrideAttrs (o: {
+  #     mesonFlags = (o.mesonFlags or []) ++ ["-Dglx=disabled"];
+  #   });
 
-    libcec = super.libcec.override { inherit (super) libraspberrypi; };
+  #   libcec = super.libcec.override { inherit (super) libraspberrypi; };
 
-    kodiPlain = (super.kodiPlain.override {
-      vdpauSupport = false;
-      libva = null;
-      raspberryPiSupport = true;
-    });
+  #   kodiPlain = (super.kodiPlain.override {
+  #     vdpauSupport = false;
+  #     libva = null;
+  #     raspberryPiSupport = true;
+  #   });
 
-  })];
+  # })];
 
   nixpkgs.crossSystem = {
     raspberryPi0 = { config = "armv6l-unknown-linux-gnueabihf"; };
@@ -113,7 +113,7 @@ in {
 
     # rpi3 and rpi4 can use either aarch64 or armv8-a (armv7l).
     raspberryPi3 = { config = "aarch64-unknown-linux-gnu"; };
-    raspberryPi4 = { config = "armv7l-unknown-linux-gnueabihf"; };
+    raspberryPi4 = { config = "aarch64-unknown-linux-gnu"; };
   }.${config.nixiosk.hardware} or (throw "No known crossSystem for ${config.nixiosk.hardware}.");
 
   boot.loader.grub.enable = false;

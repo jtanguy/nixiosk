@@ -39,33 +39,49 @@
     useDefaultShell = true;
   };
 
-  systemd.services."cage@" = {
-    serviceConfig.Restart = "always";
-    environment = {
-      WLR_LIBINPUT_NO_DEVICES = "1";
-      XDG_DATA_DIRS = "/nix/var/nix/profiles/default/share:/run/current-system/sw/share";
-      XDG_CONFIG_DIRS = "/nix/var/nix/profiles/default/etc/xdg:/run/current-system/sw/etc/xdg";
-      WEBKIT_DISABLE_COMPOSITING_MODE = "1";
-    } // lib.optionalAttrs (config.environment.variables ? GDK_PIXBUF_MODULE_FILE) {
-      GDK_PIXBUF_MODULE_FILE = config.environment.variables.GDK_PIXBUF_MODULE_FILE;
-    };
+  services.xserver.displayManager.startx.enable = true;
+
+  environment.etc."X11/xinit/xinitrc" = {
+    enable = true;
+    text = ''
+if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
+	eval $(dbus-launch --exit-with-session --sh-syntax)
+fi
+systemctl --user import-environment DISPLAY XAUTHORITY
+
+if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+        dbus-update-activation-environment DISPLAY XAUTHORITY
+fi
+      '';
   };
 
+  # systemd.services."cage@" = {
+  #   serviceConfig.Restart = "always";
+  #   environment = {
+  #     WLR_LIBINPUT_NO_DEVICES = "1";
+  #     XDG_DATA_DIRS = "/nix/var/nix/profiles/default/share:/run/current-system/sw/share";
+  #     XDG_CONFIG_DIRS = "/nix/var/nix/profiles/default/etc/xdg:/run/current-system/sw/etc/xdg";
+  #     WEBKIT_DISABLE_COMPOSITING_MODE = "1";
+  #   } // lib.optionalAttrs (config.environment.variables ? GDK_PIXBUF_MODULE_FILE) {
+  #     GDK_PIXBUF_MODULE_FILE = config.environment.variables.GDK_PIXBUF_MODULE_FILE;
+  #   };
+  # };
+
   systemd.enableEmergencyMode = false;
-  systemd.services."serial-getty@ttyS0".enable = false;
-  systemd.services."serial-getty@hvc0".enable = false;
-  systemd.services."getty@tty1".enable = false;
-  systemd.services."autovt@".enable = false;
+  # systemd.services."serial-getty@ttyS0".enable = false;
+  # systemd.services."serial-getty@hvc0".enable = false;
+  # systemd.services."getty@tty1".enable = false;
+  # systemd.services."autovt@".enable = false;
 
   services.udisks2.enable = false;
   documentation.enable = false;
   powerManagement.enable = false;
   programs.command-not-found.enable = false;
 
-  services.cage = {
-    enable = true;
-    user = "kiosk";
-  };
+  # services.cage = {
+  #   enable = true;
+  #   user = "kiosk";
+  # };
 
   services.avahi = {
     enable = true;
@@ -142,7 +158,7 @@
         soxr = null;
       });
 
-      mesa = super.mesa.override { eglPlatforms = ["wayland" "drm"]; };
+      # mesa = super.mesa.override { eglPlatforms = ["wayland" "drm"]; };
 
       kodiPlain = super.kodiPlain.override {
         sambaSupport = false;
@@ -152,31 +168,6 @@
       };
 
     }) (self: super: {
-      busybox-sandbox-shell = super.busybox-sandbox-shell.override { inherit (super) busybox; };
-
-      retroarchBare = (super.retroarchBare.override {
-        SDL2 = null;
-        withVulkan = false;
-        withX11 = false;
-      }).overrideAttrs (o: {
-        patches = (o.patches or []) ++ [ ./retroarch-lakkaish.patch ];
-      });
-
-      # armv6l (no NEON) and aarch64 don’t have prebuilt cores, so
-      # provide some here that are known to work well. Feel free to
-      # include more that are known to work here. To add more cores,
-      # or update existing core, contribute them upstream in Nixpkgs
-      retroarch = super.retroarch.override {
-        cores = {
-          armv6l = with super.libretro; [ snes9x stella fbalpha2012 fceumm vba-next vecx handy prboom bluemsx ];
-          aarch64 = with super.libretro; [ atari800 beetle-gba beetle-lynx beetle-ngp beetle-pce-fast beetle-pcfx beetle-psx beetle-psx-hw beetle-saturn beetle-saturn-hw beetle-snes beetle-supergrafx beetle-vb beetle-wswan bluemsx bsnes-mercury citra desmume desmume2015 dosbox eightyone fbalpha2012 fbneo fceumm fmsx freeintv gambatte genesis-plus-gx gpsp gw handy hatari mame2000 mame2003 mame2003-plus mesen meteor mgba mupen64plus neocd nestopia o2em opera parallel-n64 pcsx_rearmed ppsspp prboom prosystem quicknes sameboy smsplus-gx snes9x snes9x2002 snes9x2005 snes9x2010 stella stella2014 tgbdual vba-m vba-next vecx virtualjaguar yabause ];
-        }.${super.stdenv.hostPlatform.parsed.cpu.name} or [];
-      };
-
-      kodiPlain = super.kodiPlain.override {
-        useWayland = true;
-        x11Support = false;
-      };
 
       makair-control-ui = self.rustPlatform.buildRustPackage {
         name = "makair-control-ui";
