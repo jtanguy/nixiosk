@@ -178,28 +178,52 @@
         x11Support = false;
       };
 
-      makair-control-ui = self.rustPlatform.buildRustPackage {
-        name = "makair-control-ui";
-        src = builtins.fetchTarball {
-          url = "https://github.com/makers-for-life/makair-control-ui/archive/84a395809abf86ac74b3a603a2a99141e2a9b51d.tar.gz";
-          sha256 = "0hhm44nrbg1hnjz1blq7bhnffzzjnahcsbf6rqnwq5ppn86n3iav";
-        };
-        nativeBuildInputs = with super.buildPackages; [ cmake pkgconfig python3 ];
-        buildInputs = with super; [ expat freetype xorg.libxcb fontconfig  ];
-        PKG_CONFIG = "pkg-config";
-        verifyCargoDeps = true;
-        cargoSha256 = "089j0sdmjs8x2s0vlx6ik6wpfdvfdwv2194hmrr4gykyvf785w49";
-        postInstall = let
-          rpathLibs = with super; [
+      makair-control-ui = self.rustPlatform.buildRustPackage rec {
+          name = "makair-control-ui";
+          src = builtins.fetchTarball {
+            url = "https://github.com/makers-for-life/makair-control-ui/archive/84a395809abf86ac74b3a603a2a99141e2a9b51d.tar.gz";
+            sha256 = "0hhm44nrbg1hnjz1blq7bhnffzzjnahcsbf6rqnwq5ppn86n3iav";
+          };
+          nativeBuildInputs = with super; [ cmake pkgconfig python3 ];
+          buildInputs = with super; [
             expat
-            fontconfig
             freetype
+            fontconfig
             libGL
+            libGLU
+            mesa
+            xorg.libxcb
+            xorg.libXcursor
+            xorg.libXrandr
+            xorg.libX11
+            xorg.libX11.dev
+            xorg.libXi
             wayland
           ];
-        in ''
-          patchelf --set-rpath "${lib.makeLibraryPath rpathLibs}" $out/bin/makair-control
-        '';
+          PKG_CONFIG = "pkg-config";
+          verifyCargoDeps = true;
+          cargoSha256 = "089j0sdmjs8x2s0vlx6ik6wpfdvfdwv2194hmrr4gykyvf785w49";
+          LD_LIBRARY_PATH = with super; with xlibs; lib.makeLibraryPath [
+            expat
+            freetype
+            fontconfig
+            libGL
+            libGLU
+            libX11
+            libXcursor
+            libXi
+            libXrandr
+            "/run/opengl-driver"
+            "/run/opengl-driver-32"
+          ];
+          dontStrip = true;
+          dontPatchELF=true;
+          postInstall = ''
+            patchelf \
+            --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
+            --set-rpath "${LD_LIBRARY_PATH}" \
+            $out/bin/makair-control
+          '';
       };
 
     }) ];
